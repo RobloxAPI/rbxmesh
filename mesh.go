@@ -1,3 +1,4 @@
+// Package rbxmesh is used to decode and encode Roblox mesh files.
 package rbxmesh
 
 import (
@@ -25,6 +26,8 @@ func (r *readReporter) BytesRead() int64 {
 	return r.n
 }
 
+// Version indicates the version of a mesh format to be used when encoding or
+// decoding.
 type Version int
 
 const (
@@ -34,6 +37,9 @@ const (
 	Version1_01    Version = 2
 )
 
+// String returns a string representation of the version. It matches the
+// version signature used in the mesh format. An unknown version return an
+// invalid string.
 func (v Version) String() string {
 	switch v {
 	case Version1_00:
@@ -47,6 +53,10 @@ func (v Version) String() string {
 	}
 }
 
+// VersionFromString matches a string to a Version, returning VersionUnknown
+// if the string could not be matched. The string must be the same as the
+// version signature in the mesh format, which is also the value returned by
+// Version.String.
 func VersionFromString(s string) Version {
 	switch s {
 	case Version1_00.String():
@@ -59,18 +69,24 @@ func VersionFromString(s string) Version {
 	return VersionUnknown
 }
 
+// MeshVertex represents a single vertex in a mesh.
 type MeshVertex struct {
-	Position [3]float64
-	Normal   [3]float64
-	Texture  [3]float64
-	Color    [4]byte
+	Position [3]float64 // Vx, Vy, Vz; The position of the vertex.
+	Normal   [3]float64 // Nx, Ny, Nz; The direction of the vertex.
+	Texture  [3]float64 // Tu, Tv, Tw; UV coordinates of the vertex.
+	Color    [4]byte    // R, G, B, A; Not applicable if Mesh.HasColor is false.
 }
 
+// MeshFace represents a single triangle in a mesh. It consists of 3 indices,
+// each pointing to a MeshVertex in a Mesh.Vertices slice.
 type MeshFace [3]int
 
+// Mesh holds the contents of a mesh file. When encoding, the data from each
+// field is written. When decoding, each field is filled in according to data
+// read from the format.
 type Mesh struct {
-	Version  Version
-	HasColor bool
+	Version  Version // Version indicates the version used to decode, or the version to use when encoding.
+	HasColor bool    // HasColor indicates whether each MeshVertex has color data.
 	Vertices []MeshVertex
 	Faces    []MeshFace
 }
@@ -81,6 +97,8 @@ const nVertex = (4 + 4 + 4) + (4 + 4 + 4) + (4 + 4 + 4)
 const nColor = nVertex + (1 + 1 + 1 + 1)
 const nFace = 4 + 4 + 4
 
+// ReadFrom decodes a mesh file by reading and parsing bytes from an
+// io.Reader. Fields of the Mesh are filled in according to the parsed data.
 func (m *Mesh) ReadFrom(r io.Reader) (n int64, err error) {
 	rr := &readReporter{r: r}
 	buf := bufio.NewReader(rr)
@@ -213,6 +231,9 @@ func (m *Mesh) ReadFrom(r io.Reader) (n int64, err error) {
 	return rr.BytesRead(), errors.New("unknown version")
 }
 
+// WriteTo encodes a mesh file by converting fields of the Mesh into a byte
+// representation, which is written to an io.Writer. The format is determined
+// by Mesh.Version.
 func (m *Mesh) WriteTo(w io.Writer) (n int64, err error) {
 	nn, err := w.Write([]byte(m.Version.String() + "\n"))
 	if n += int64(nn); err != nil {
