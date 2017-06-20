@@ -88,8 +88,11 @@ func (m *Mesh) ReadFrom(r io.Reader) (n int64, err error) {
 	if err != nil {
 		return rr.BytesRead(), err
 	}
-	switch version := VersionFromString(string(line)); version {
+	version := VersionFromString(string(line))
+	m.Version = version
+	switch version {
 	case Version1_00, Version1_01:
+		m.HasColor = false
 		line, _, err := buf.ReadLine()
 		if err != nil {
 			return rr.BytesRead(), err
