@@ -75,7 +75,8 @@ type Mesh struct {
 	Faces    []MeshFace
 }
 
-const nHeader = 2 + 2 + 4 + 4
+const nHeaderSize = 2
+const nHeader = nHeaderSize + 1 + 1 + 4 + 4
 const nVertex = (4 + 4 + 4) + (4 + 4 + 4) + (4 + 4 + 4)
 const nColor = nVertex + (1 + 1 + 1 + 1)
 const nFace = 4 + 4 + 4
@@ -136,36 +137,35 @@ func (m *Mesh) ReadFrom(r io.Reader) (n int64, err error) {
 		b := make([]byte, nColor)
 
 		// Header size
-		b = b[:2]
+		b = b[:nHeaderSize]
 		if _, err := buf.Read(b); err != nil {
 			return rr.BytesRead(), err
 		}
 		switch int(binary.LittleEndian.Uint16(b)) {
 		case nHeader:
+			b = b[:nHeader]
+			if _, err := buf.Read(b[nHeaderSize : nHeader-nHeaderSize]); err != nil {
+				return rr.BytesRead(), err
+			}
+			switch int(b[2]) {
+			case nVertex:
+				m.HasColor = false
+			case nColor:
+				m.HasColor = true
+			default:
+				return rr.BytesRead(), errors.New("unexpected vertex size")
+			}
+			switch int(b[3]) {
+			case nFace:
+			default:
+				return rr.BytesRead(), errors.New("unexpected face size")
+			}
+			m.Vertices = make([]MeshVertex, int(binary.LittleEndian.Uint32(b[4:8])))
+			m.Faces = make([]MeshFace, int(binary.LittleEndian.Uint32(b[8:12])))
+
 		default:
 			return rr.BytesRead(), errors.New("unexpected header size")
 		}
-
-		// Header
-		b = b[:nHeader]
-		if _, err := buf.Read(b); err != nil {
-			return rr.BytesRead(), err
-		}
-		switch int(binary.LittleEndian.Uint16(b[0:2])) {
-		case nVertex:
-			m.HasColor = false
-		case nColor:
-			m.HasColor = true
-		default:
-			return rr.BytesRead(), errors.New("unexpected vertex size")
-		}
-		switch int(binary.LittleEndian.Uint16(b[2:4])) {
-		case nFace:
-		default:
-			return rr.BytesRead(), errors.New("unexpected face size")
-		}
-		m.Vertices = make([]MeshVertex, int(binary.LittleEndian.Uint32(b[4:8])))
-		m.Faces = make([]MeshFace, int(binary.LittleEndian.Uint32(b[8:12])))
 
 		// Vertices
 		if m.HasColor {
