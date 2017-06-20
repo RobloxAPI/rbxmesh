@@ -112,6 +112,7 @@ func (m *Mesh) ReadFrom(r io.Reader) (n int64, err error) {
 				); err != nil {
 					return rr.BytesRead(), err
 				}
+				v.Texture[1] = 1 - v.Texture[1]
 				if version == Version1_00 {
 					v.Position[0] *= 0.5
 					v.Position[1] *= 0.5
@@ -240,7 +241,7 @@ func (m *Mesh) WriteTo(w io.Writer) (n int64, err error) {
 				nn, err := fmt.Fprintf(w, "[%f,%f,%f][%f,%f,%f][%f,%f,%f]",
 					float32(pos[0]), float32(pos[1]), float32(pos[2]),
 					float32(v.Normal[0]), float32(v.Normal[1]), float32(v.Normal[2]),
-					float32(v.Texture[0]), float32(v.Texture[1]), float32(v.Texture[2]),
+					float32(v.Texture[0]), float32(1-v.Texture[1]), float32(v.Texture[2]),
 				)
 				if n += int64(nn); err != nil {
 					return n, err
