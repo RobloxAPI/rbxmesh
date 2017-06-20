@@ -10,18 +10,18 @@ import (
 	"strconv"
 )
 
-type ReadReporter struct {
+type readReporter struct {
 	r io.Reader
 	n int64
 }
 
-func (r *ReadReporter) Read(p []byte) (n int, err error) {
+func (r *readReporter) Read(p []byte) (n int, err error) {
 	n, err = r.r.Read(p)
 	r.n += int64(n)
 	return n, err
 }
 
-func (r *ReadReporter) BytesRead() int64 {
+func (r *readReporter) BytesRead() int64 {
 	return r.n
 }
 
@@ -81,7 +81,7 @@ const nColor = nVertex + (1 + 1 + 1 + 1)
 const nFace = 4 + 4 + 4
 
 func (m *Mesh) ReadFrom(r io.Reader) (n int64, err error) {
-	rr := &ReadReporter{r: r}
+	rr := &readReporter{r: r}
 	buf := bufio.NewReader(rr)
 	line, _, err := buf.ReadLine()
 	if err != nil {
